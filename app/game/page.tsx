@@ -18,6 +18,18 @@ import HandTracker from "@/components/hand-tracker"
 import GameCanvas from "@/components/game-canvas"
 import Link from "next/link"
 
+type ProgressMap = { map1: number; map2: number; map3: number; map4: number; };
+
+type InitialProgress = {
+  keyboard: ProgressMap;
+  camera: ProgressMap;
+};
+
+const initialProgress: InitialProgress = {
+  keyboard: { map1: 0, map2: 0, map3: 0, map4: 0 },
+  camera: { map1: 0, map2: 0, map3: 0, map4: 0 },
+};
+
 export default function GamePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -40,10 +52,10 @@ export default function GamePage() {
 
   // Map configurations
   const mapConfigs = {
-    map1: { obstacleSpeed: 3, increasingSpeed: false },
-    map2: { obstacleSpeed: 4, increasingSpeed: false },
-    map3: { obstacleSpeed: 4, increasingSpeed: true },
-    map4: { obstacleSpeed: 5, increasingSpeed: true },
+    map1: { obstacleSpeed: 6, increasingSpeed: false },
+    map2: { obstacleSpeed: 7, increasingSpeed: false },
+    map3: { obstacleSpeed: 7, increasingSpeed: true },
+    map4: { obstacleSpeed: 8, increasingSpeed: true },
   }
 
   const currentMap = mapConfigs[mapId as keyof typeof mapConfigs]
@@ -124,9 +136,14 @@ export default function GamePage() {
           setIsGameStarted(true)
           setGameStartTime(Date.now())
           startTimerRef.current = null
-        }, 1000) // 1-second delay before starting
-      } else if (!isHandDetected && isGameStarted) {
-        setIsPaused(true)
+        }, 1000)
+      } else if (!isHandDetected && isGameStarted && !startTimerRef.current) {
+        setTimeout(() => {
+          if (!isHandDetected) {
+            console.log("Hand not detected, pausing game")
+            setIsPaused(true)
+          }
+        }, 500)
       }
     } else if (isGameStarted && !gameStartTime) {
       setGameStartTime(Date.now())
@@ -179,7 +196,7 @@ export default function GamePage() {
           keyboard: { map1: 0, map2: 0, map3: 0, map4: 0 },
           camera: { map1: 0, map2: 0, map3: 0, map4: 0 },
         }
-        initialProgress[mode as "keyboard" | "camera"][mapId] = timeProgress
+        initialProgress[mode as keyof InitialProgress][mapId as keyof ProgressMap] = timeProgress
         localStorage.setItem("handwave-progress", JSON.stringify(initialProgress))
       }
     }, 1000)
@@ -208,7 +225,7 @@ export default function GamePage() {
         keyboard: { map1: 0, map2: 0, map3: 0, map4: 0 },
         camera: { map1: 0, map2: 0, map3: 0, map4: 0 },
       }
-      initialProgress[mode as "keyboard" | "camera"][mapId] = 100
+      initialProgress[mode as keyof InitialProgress][mapId as keyof ProgressMap] = 100
       localStorage.setItem("handwave-progress", JSON.stringify(initialProgress))
     }
   }
@@ -223,6 +240,23 @@ export default function GamePage() {
     setShowStartMessage(mode === "camera")
     setGameStartTime(null)
   }
+
+  const generateObstacles = (numberOfObstacles: number, canvasWidth: number, canvasHeight: number) => {
+    const obstacleSpacing = 200; // Minimum spacing between obstacles
+    const newObstacles: { x: number; y: number }[] = []; // Define the type of newObstacles
+
+    while (newObstacles.length < numberOfObstacles) {
+      const xPosition = Math.random() * canvasWidth;
+      const yPosition = Math.random() * canvasHeight;
+
+      // Ensure obstacles are spaced out
+      if (newObstacles.every(obstacle => Math.abs(obstacle.x - xPosition) > obstacleSpacing)) {
+        newObstacles.push({ x: xPosition, y: yPosition });
+      }
+    }
+
+    return newObstacles;
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-black p-4 text-white">
@@ -242,7 +276,7 @@ export default function GamePage() {
         {/* Progress */}
         <div className="flex-1 max-w-xs mx-4">
           <div className="text-sm font-medium text-white mb-1">Progress: {progress}%</div>
-          <Progress value={progress} className="h-3 bg-white/10" indicatorClassName="bg-white transition-all" />
+          <Progress value={progress} className="h-3 bg-white/10" />
         </div>
 
         {/* Health */}
@@ -288,6 +322,7 @@ export default function GamePage() {
           isGameOver={isGameOver}
           handPosition={handPosition}
           progress={progress}
+          health={health}
           onCollision={handleCollision}
           onLevelComplete={handleLevelComplete}
         />
@@ -354,7 +389,7 @@ export default function GamePage() {
 
           <div className="my-6">
             <div className="text-lg font-medium text-white mb-2">Progress: {progress}%</div>
-            <Progress value={progress} className="h-4 bg-white/10" indicatorClassName="bg-white transition-all" />
+            <Progress value={progress} className="h-4 bg-white/10" />
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-4">

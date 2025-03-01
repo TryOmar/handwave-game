@@ -42,11 +42,11 @@ export default function GameCanvas({
   const requestIdRef = useRef<number>(0)
   const playerRef = useRef<GameObject>({
     x: 50, // Fixed x position
-    y: 150,
+    y: 200,
     width: 20,
     height: 20,
     color: "#FFFFFF",
-    speed: 12, // Increased from 5 to 12
+    speed: 8, // Decreased from 12 to 8 for smoother movement
     type: "player",
   })
   const obstaclesRef = useRef<GameObject[]>([])
@@ -58,6 +58,13 @@ export default function GameCanvas({
   const collisionMessageRef = useRef<{ text: string; x: number; y: number; opacity: number } | null>(null)
   const [currentSpeed, setCurrentSpeed] = useState<number>(mapConfig.obstacleSpeed)
   const flagSpawnThreshold = 80 // Show flag when progress reaches 80%
+  const [isMovingUp, setIsMovingUp] = useState(false)
+  const [isMovingDown, setIsMovingDown] = useState(false)
+  const speedFactor = 2; // Adjust this value to control the speed of movement
+
+  const lerp = (start: number, end: number, t: number) => {
+    return start + (end - start) * t;
+  };
 
   // Initialize game
   useEffect(() => {
@@ -81,7 +88,7 @@ export default function GameCanvas({
       width: 20,
       height: 20,
       color: "#FFFFFF",
-      speed: 12,
+      speed: 8,
       type: "player",
     }
     setCurrentSpeed(mapConfig.obstacleSpeed)
@@ -90,26 +97,37 @@ export default function GameCanvas({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isPaused || isGameOver || mode !== "keyboard") return
 
-      const player = playerRef.current
-      const canvas = canvasRef.current
-      if (!canvas) return
-
       switch (e.key) {
         case "ArrowUp":
         case "w":
-          player.y = Math.max(player.y - player.speed, 0)
+          setIsMovingUp(true)
           break
         case "ArrowDown":
         case "s":
-          player.y = Math.min(player.y + player.speed, canvas.height - player.height)
+          setIsMovingDown(true)
+          break
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowUp":
+        case "w":
+          setIsMovingUp(false)
+          break
+        case "ArrowDown":
+        case "s":
+          setIsMovingDown(false)
           break
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("keyup", handleKeyUp)
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keyup", handleKeyUp)
       cancelAnimationFrame(requestIdRef.current)
     }
   }, [mode, mapConfig.obstacleSpeed, isPaused, isGameOver])
@@ -137,9 +155,9 @@ export default function GameCanvas({
 
       flagRef.current = {
         x: canvas.width,
-        y: 150 - 25,
+        y: 0, // Start from the top of the canvas
         width: 30,
-        height: 50,
+        height: canvas.height, // Make it cover the entire height
         color: "#FFFFFF",
         speed: currentSpeed,
         type: "flag",
@@ -381,6 +399,21 @@ export default function GameCanvas({
         }
       }
 
+      // Update player position on each frame
+      const player = playerRef.current
+      if (!canvas) return
+
+      // Calculate new x position based on progress
+      const targetX = (progress / 100) * (canvas.width - player.width)
+      player.x = lerp(player.x, targetX, 0.01) // Use a smaller factor for smoother movement
+
+      if (isMovingUp) {
+        player.y = Math.max(player.y - player.speed, 0)
+      }
+      if (isMovingDown) {
+        player.y = Math.min(player.y + player.speed, canvas.height - player.height)
+      }
+
       requestIdRef.current = requestAnimationFrame(render)
     }
 
@@ -398,6 +431,9 @@ export default function GameCanvas({
     mapConfig.obstacleSpeed,
     currentSpeed,
     health,
+    isMovingUp,
+    isMovingDown,
+    progress,
   ])
 
   return <canvas ref={canvasRef} className="w-full h-full" />
