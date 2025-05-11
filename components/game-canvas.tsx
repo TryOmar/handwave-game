@@ -61,6 +61,8 @@ export default function GameCanvas({
   const [isMovingUp, setIsMovingUp] = useState(false)
   const [isMovingDown, setIsMovingDown] = useState(false)
   const speedFactor = 2; // Adjust this value to control the speed of movement
+  const lastObstacleYRef = useRef<number | null>(null)
+  const nextObstacleDelayRef = useRef<number>(500)
 
   const lerp = (start: number, end: number, t: number) => {
     return start + (end - start) * t;
@@ -219,23 +221,73 @@ export default function GameCanvas({
       }
 
       // Update obstacles
-      if (time - lastObstacleTimeRef.current > 1000) {
-        // Create new obstacle with increased height
-        const minHeight = 80 // Minimum height increased
-        const maxHeight = 160 // Maximum height increased
-        const obstacleHeight = Math.random() * (maxHeight - minHeight) + minHeight
-        const obstacleY = Math.random() * (canvas.height - obstacleHeight)
-
-        obstaclesRef.current.push({
-          x: canvas.width,
-          y: obstacleY,
-          width: 20,
-          height: obstacleHeight,
-          color: "#FFFFFF",
-          speed: currentSpeed,
-          type: "obstacle",
-        })
-
+      if (time - lastObstacleTimeRef.current > nextObstacleDelayRef.current) {
+        const minHeight = 40 // Allow smaller obstacles
+        const maxHeight = 180 // Allow larger obstacles
+        const canvasMid = canvas.height / 2
+        let spawnType = Math.random()
+        let obstaclesToAdd = []
+        // 20% chance to spawn a tunnel (gap in the middle)
+        if (spawnType < 0.2) {
+          const gapHeight = 60 + Math.random() * 60 // 60-120px gap
+          const gapY = Math.random() * (canvas.height - gapHeight)
+          // Top obstacle
+          if (gapY > 20) {
+            obstaclesToAdd.push({
+              x: canvas.width,
+              y: 0,
+              width: 20,
+              height: gapY,
+              color: "#FFFFFF",
+              speed: currentSpeed,
+              type: "obstacle" as const,
+            })
+          }
+          // Bottom obstacle
+          if (gapY + gapHeight < canvas.height - 20) {
+            obstaclesToAdd.push({
+              x: canvas.width,
+              y: gapY + gapHeight,
+              width: 20,
+              height: canvas.height - (gapY + gapHeight),
+              color: "#FFFFFF",
+              speed: currentSpeed,
+              type: "obstacle" as const,
+            })
+          }
+        } else {
+          // Single obstacle, more variety in position and height
+          const obstacleHeight = Math.random() * (maxHeight - minHeight) + minHeight
+          let obstacleY
+          // 1 in 4 hug top, 1 in 4 hug bottom, rest random
+          const edgeChance = Math.random()
+          if (edgeChance < 0.25) {
+            obstacleY = 0
+          } else if (edgeChance < 0.5) {
+            obstacleY = canvas.height - obstacleHeight
+          } else {
+            obstacleY = Math.random() * (canvas.height - obstacleHeight)
+          }
+          // Avoid same y as last obstacle
+          if (lastObstacleYRef.current !== null && Math.abs(obstacleY - lastObstacleYRef.current) < 40) {
+            obstacleY = Math.max(0, Math.min(canvas.height - obstacleHeight, obstacleY + 60))
+          }
+          lastObstacleYRef.current = obstacleY
+          obstaclesToAdd.push({
+            x: canvas.width,
+            y: obstacleY,
+            width: 20,
+            height: obstacleHeight,
+            color: "#FFFFFF",
+            speed: currentSpeed,
+            type: "obstacle" as const,
+          })
+        }
+        for (const obs of obstaclesToAdd) {
+          if (obs.height > 10) obstaclesRef.current.push(obs)
+        }
+        // Randomize next spawn interval (400-800ms)
+        nextObstacleDelayRef.current = 400 + Math.random() * 400
         lastObstacleTimeRef.current = time
       }
 
