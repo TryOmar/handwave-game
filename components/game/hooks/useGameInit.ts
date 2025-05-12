@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, RefObject, MutableRefObject } from "react"
-import { GameObject } from "../types"
+import { GameObject, CollisionMessage } from "../types"
 
 interface UseGameInitProps {
   canvasRef: RefObject<HTMLCanvasElement>
@@ -12,7 +12,7 @@ interface UseGameInitProps {
   gameTimeRef: MutableRefObject<number>
   lastObstacleTimeRef: MutableRefObject<number>
   collisionFlashRef: MutableRefObject<number>
-  collisionMessageRef: MutableRefObject<{ text: string; x: number; y: number; opacity: number } | null>
+  collisionMessageRef: MutableRefObject<CollisionMessage | null>
   collisionCooldownRef: MutableRefObject<boolean>
   setIsMovingUp: (isMoving: boolean) => void
   setIsMovingDown: (isMoving: boolean) => void
@@ -43,6 +43,7 @@ export const useGameInit = ({
   isPaused,
   isGameOver,
 }: UseGameInitProps) => {
+  // Base speed is the same regardless of mode
   const [currentSpeed, setCurrentSpeed] = useState<number>(mapConfig.obstacleSpeed)
   
   useEffect(() => {
@@ -70,6 +71,8 @@ export const useGameInit = ({
       speed: 8,
       type: "player",
     }
+    
+    // Always set the same base speed regardless of mode
     setCurrentSpeed(mapConfig.obstacleSpeed)
 
     // Set up keyboard controls - only up/down

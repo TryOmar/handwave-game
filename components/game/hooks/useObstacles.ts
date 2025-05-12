@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, RefObject, MutableRefObject } from "react"
+import { useEffect, RefObject, MutableRefObject, useState } from "react"
 import { GameObject, CollisionMessage } from "../types"
 
 interface UseObstaclesProps {
@@ -10,6 +10,7 @@ interface UseObstaclesProps {
   progress: number
   currentSpeed: number
   isGameOver: boolean
+  mode: "keyboard" | "camera" // Add mode parameter
 }
 
 export const useObstacles = ({
@@ -19,8 +20,12 @@ export const useObstacles = ({
   progress,
   currentSpeed,
   isGameOver,
+  mode, // Use the mode parameter
 }: UseObstaclesProps) => {
   const flagSpawnThreshold = 80 // Show flag when progress reaches 80%
+  
+  // Reduce max obstacles in camera mode
+  const [maxActiveObstacles] = useState(mode === "camera" ? 8 : 15);
 
   // Spawn flag when progress reaches threshold
   useEffect(() => {
@@ -50,15 +55,28 @@ export const useObstacles = ({
     const canvas = canvasRef.current
     if (!canvas) return false
     
+    // Limit total number of obstacles for performance
+    if (obstaclesRef.current.length >= maxActiveObstacles) {
+      return false;
+    }
+    
     if (time - lastObstacleTimeRef.current > nextObstacleDelayRef.current) {
       const minHeight = 40 // Allow smaller obstacles
       const maxHeight = 180 // Allow larger obstacles
       const canvasMid = canvas.height / 2
       let spawnType = Math.random()
       let obstaclesToAdd = []
-      // 20% chance to spawn a tunnel (gap in the middle)
-      if (spawnType < 0.2) {
-        const gapHeight = 60 + Math.random() * 40 // 60-100px gap (narrower gap)
+      
+      // Reduce tunnel obstacles in camera mode by half
+      const tunnelThreshold = mode === "camera" ? 0.1 : 0.2;
+      
+      // 20% chance to spawn a tunnel (gap in the middle) in keyboard mode
+      // 10% chance in camera mode
+      if (spawnType < tunnelThreshold) {
+        // Make gap bigger in camera mode
+        const gapHeight = mode === "camera" 
+          ? 80 + Math.random() * 40 // 80-120px gap in camera mode
+          : 60 + Math.random() * 40; // 60-100px gap in keyboard mode
         
         // Ensure the gap can appear anywhere in the canvas height
         // Divide the canvas into 3 sections and randomize which section the gap appears in
@@ -142,11 +160,22 @@ export const useObstacles = ({
           type: "obstacle" as const,
         })
       }
+      
+      // Add new obstacles while respecting the maximum count
       for (const obs of obstaclesToAdd) {
-        if (obs.height > 10) obstaclesRef.current.push(obs)
+        if (obs.height > 10 && obstaclesRef.current.length < maxActiveObstacles) {
+          obstaclesRef.current.push(obs)
+        }
       }
-      // Randomize next spawn interval (400-800ms)
-      nextObstacleDelayRef.current = 400 + Math.random() * 400
+      
+      // Randomize next spawn interval
+      // Increase delay for camera mode (700-1200ms) vs keyboard mode (400-800ms)
+      if (mode === "camera") {
+        nextObstacleDelayRef.current = 700 + Math.random() * 500
+      } else {
+        nextObstacleDelayRef.current = 400 + Math.random() * 400
+      }
+      
       lastObstacleTimeRef.current = time
       return true
     }
@@ -155,15 +184,12 @@ export const useObstacles = ({
 
   // Update obstacle positions and check for collisions
   const updateObstacles = (onCollision: () => void, collisionCooldownRef: MutableRefObject<boolean>) => {
-    const player = obstaclesRef.current
     for (let i = obstaclesRef.current.length - 1; i >= 0; i--) {
       const obstacle = obstaclesRef.current[i]
-      obstacle.x -= obstacle.speed
-
+      
       // Remove obstacles that are off-screen
       if (obstacle.x + obstacle.width < 0) {
         obstaclesRef.current.splice(i, 1)
-        continue
       }
     }
   }
@@ -210,7 +236,6 @@ export const useObstacles = ({
   const checkFlagCollision = (playerRef: MutableRefObject<GameObject>, onLevelComplete: () => void) => {
     if (flagRef.current) {
       const flag = flagRef.current
-      flag.x -= flag.speed
 
       // Check for flag collision (level complete)
       if (
@@ -222,11 +247,7 @@ export const useObstacles = ({
         onLevelComplete()
         return true
       }
-
-      // Remove flag if it goes off-screen
-      if (flag.x + flag.width < 0) {
-        flagRef.current = null
-      }
+      
       return false
     }
     return false

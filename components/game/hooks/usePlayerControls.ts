@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, RefObject, MutableRefObject } from "react"
+import { useEffect, RefObject, MutableRefObject, useState, useRef } from "react"
 import { GameObject } from "../types"
 import { lerp } from "../utils"
 
@@ -27,38 +27,57 @@ export const usePlayerControls = ({
   isMovingDown,
   progress,
 }: UsePlayerControlsProps) => {
-  // Update player position based on hand tracking - only y position
+  const [targetY, setTargetY] = useState(150);
+  const lastHandleTimeRef = useRef(0);
+  const CAMERA_UPDATE_INTERVAL = 50; // Only process camera input every 50ms
+
+  // Update player position based on hand tracking - throttled updates
   useEffect(() => {
     if (mode === "camera" && !isPaused && !isGameOver) {
-      const canvas = canvasRef.current
-      if (!canvas) return
+      // Throttle camera updates to reduce main thread load
+      const now = performance.now();
+      if (now - lastHandleTimeRef.current < CAMERA_UPDATE_INTERVAL) {
+        return; // Skip this update if it's too soon
+      }
+      lastHandleTimeRef.current = now;
 
-      const player = playerRef.current
-      // Keep x position fixed, multiply hand movement for faster response
-      player.y = Math.min(
-        Math.max(handPosition.y * canvas.height * 1.2 - player.height / 2, 0),
-        canvas.height - player.height,
-      )
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      // Calculate target position
+      const targetPosition = Math.min(
+        Math.max(handPosition.y * canvas.height * 1.2 - playerRef.current.height / 2, 0),
+        canvas.height - playerRef.current.height,
+      );
+      
+      setTargetY(targetPosition);
     }
-  }, [handPosition, mode, isPaused, isGameOver, canvasRef, playerRef])
+  }, [handPosition, mode, isPaused, isGameOver, canvasRef, playerRef]);
 
   // Update player position on each frame
   const updatePlayerPosition = () => {
-    const player = playerRef.current
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const player = playerRef.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     // Calculate new x position based on progress
-    const targetX = (progress / 100) * (canvas.width - player.width)
-    player.x = lerp(player.x, targetX, 0.01) // Use a smaller factor for smoother movement
+    const targetX = (progress / 100) * (canvas.width - player.width);
+    player.x = lerp(player.x, targetX, 0.01); // Use a smaller factor for smoother movement
 
+    // Handle keyboard movement
     if (isMovingUp) {
-      player.y = Math.max(player.y - player.speed, 0)
+      player.y = Math.max(player.y - player.speed, 0);
     }
     if (isMovingDown) {
-      player.y = Math.min(player.y + player.speed, canvas.height - player.height)
+      player.y = Math.min(player.y + player.speed, canvas.height - player.height);
     }
-  }
 
-  return { updatePlayerPosition }
+    // Handle camera mode smoothly
+    if (mode === "camera" && !isPaused && !isGameOver) {
+      // Smoothly interpolate to target position - very responsive despite less frequent updates
+      player.y = lerp(player.y, targetY, 0.15); // Slightly higher interpolation factor for responsiveness
+    }
+  };
+
+  return { updatePlayerPosition };
 } 

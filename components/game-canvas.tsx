@@ -18,6 +18,7 @@ export default function GameCanvas({
   onLevelComplete,
   health,
 }: GameCanvasProps) {
+  // Create refs for game state
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const requestIdRef = useRef<number>(0)
   const playerRef = useRef<GameObject>({
@@ -38,6 +39,8 @@ export default function GameCanvas({
   const collisionMessageRef = useRef<CollisionMessage | null>(null)
   const lastObstacleYRef = useRef<number | null>(null)
   const nextObstacleDelayRef = useRef<number>(500)
+
+  // Player movement state
   const [isMovingUp, setIsMovingUp] = useState(false)
   const [isMovingDown, setIsMovingDown] = useState(false)
 
@@ -86,9 +89,10 @@ export default function GameCanvas({
     progress,
     currentSpeed,
     isGameOver,
+    mode,
   })
 
-  // Main game loop
+  // Main game loop - uses fixed time steps for consistent performance
   useGameLoop({
     canvasRef,
     requestIdRef,
