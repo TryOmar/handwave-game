@@ -229,10 +229,26 @@ export default function GameCanvas({
         let obstaclesToAdd = []
         // 20% chance to spawn a tunnel (gap in the middle)
         if (spawnType < 0.2) {
-          const gapHeight = 60 + Math.random() * 60 // 60-120px gap
-          const gapY = Math.random() * (canvas.height - gapHeight)
+          const gapHeight = 60 + Math.random() * 40 // 60-100px gap (narrower gap)
+          
+          // Ensure the gap can appear anywhere in the canvas height
+          // Divide the canvas into 3 sections and randomize which section the gap appears in
+          const section = Math.floor(Math.random() * 3); // 0 = top, 1 = middle, 2 = bottom
+          let gapY;
+          
+          if (section === 0) {
+            // Gap in top third
+            gapY = Math.random() * (canvas.height / 3 - gapHeight);
+          } else if (section === 1) {
+            // Gap in middle third
+            gapY = canvas.height / 3 + Math.random() * (canvas.height / 3 - gapHeight);
+          } else {
+            // Gap in bottom third
+            gapY = (canvas.height * 2 / 3) + Math.random() * (canvas.height / 3 - gapHeight);
+          }
+          
           // Top obstacle
-          if (gapY > 20) {
+          if (gapY > 10) {
             obstaclesToAdd.push({
               x: canvas.width,
               y: 0,
@@ -244,7 +260,7 @@ export default function GameCanvas({
             })
           }
           // Bottom obstacle
-          if (gapY + gapHeight < canvas.height - 20) {
+          if (gapY + gapHeight < canvas.height - 10) {
             obstaclesToAdd.push({
               x: canvas.width,
               y: gapY + gapHeight,
@@ -258,21 +274,35 @@ export default function GameCanvas({
         } else {
           // Single obstacle, more variety in position and height
           const obstacleHeight = Math.random() * (maxHeight - minHeight) + minHeight
-          let obstacleY
-          // 1 in 4 hug top, 1 in 4 hug bottom, rest random
-          const edgeChance = Math.random()
-          if (edgeChance < 0.25) {
-            obstacleY = 0
-          } else if (edgeChance < 0.5) {
-            obstacleY = canvas.height - obstacleHeight
+          let obstacleY;
+          
+          // Divide canvas into 5 vertical zones for better distribution
+          // 1/5 chance for each zone
+          const zone = Math.floor(Math.random() * 5);
+          const zoneHeight = canvas.height / 5;
+          
+          if (zone === 0) {
+            // Top zone - force obstacle to be at the top
+            obstacleY = 0;
+          } else if (zone === 4) {
+            // Bottom zone - force obstacle to be at the bottom
+            obstacleY = canvas.height - obstacleHeight;
           } else {
-            obstacleY = Math.random() * (canvas.height - obstacleHeight)
+            // Middle zones - place obstacle within the selected zone
+            const zoneStart = zone * zoneHeight;
+            obstacleY = zoneStart + Math.random() * (zoneHeight - obstacleHeight);
+            obstacleY = Math.min(obstacleY, canvas.height - obstacleHeight);
           }
+          
           // Avoid same y as last obstacle
           if (lastObstacleYRef.current !== null && Math.abs(obstacleY - lastObstacleYRef.current) < 40) {
-            obstacleY = Math.max(0, Math.min(canvas.height - obstacleHeight, obstacleY + 60))
+            // If too similar to last position, move to a completely different zone
+            obstacleY = (obstacleY < canvasMid) ? 
+              canvasMid + Math.random() * (canvas.height - canvasMid - obstacleHeight) : 
+              Math.random() * (canvasMid - obstacleHeight);
           }
-          lastObstacleYRef.current = obstacleY
+          
+          lastObstacleYRef.current = obstacleY;
           obstaclesToAdd.push({
             x: canvas.width,
             y: obstacleY,
