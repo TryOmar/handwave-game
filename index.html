@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HandWave Game</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <style>
+            *{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body{
+                background: #121212;
+                overflow-x: hidden;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .container{
+                position: relative;
+                width: 90%;
+                max-width: 1000px;
+                height: 80vh;
+                max-height: 500px;
+                background: #1e1e1e;
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+                margin: 20px auto;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .container .slide .item{
+                width: 200px;
+                height: 300px;
+                position: absolute;
+                top: 50%;
+                transform: translate(0, -50%);
+                border-radius: 20px;
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+                background-position: center center;
+                background-size: cover;
+                display: inline-block;
+                transition: 0.5s;
+            }
+
+            .slide .item:nth-child(1){
+                top: 0;
+                left: 0;
+                transform: translate(0, 0);
+                border-radius: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Show second slide as preview instead of hiding it */
+            .slide .item:nth-child(2){
+                left: 90%;
+                filter: blur(3px);
+                opacity: 1;
+                z-index: 1;
+                top: 50%;
+                transform: translate(0, -50%);
+                width: 200px;
+                height: 300px;
+                border-radius: 20px;
+                transition: filter 0.3s;
+            }
+
+            /* Hide third slide instead of showing it */
+            .slide .item:nth-child(3){
+                opacity: 0;
+                z-index: -1;
+            }
+            
+            /* Hide all slides after the 3rd one */
+            .slide .item:nth-child(n + 4){
+                left: calc(50% + 220px);
+                opacity: 0;
+            }
+
+            .item .content{
+                position: absolute;
+                top: 50%;
+                left: 10%;
+                width: 80%;
+                max-width: 300px;
+                text-align: left;
+                color: #fff;
+                transform: translate(0, -50%);
+                display: none;
+                text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.8);
+            }
+
+            .item .content.dark-text{
+                color: #fff;
+                text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.8);
+            }
+
+            /* Fix: Show first slide's content instead of second */
+            .slide .item:nth-child(1) .content{
+                display: block;
+            }
+
+            .content .name{
+                font-size: 40px;
+                text-transform: uppercase;
+                font-weight: bold;
+                opacity: 0;
+                animation: animate 1s ease-in-out 1 forwards;
+                display: inline-block;
+                background-color: rgba(0, 0, 0, 0.6);
+                padding: 8px 15px;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+                margin-bottom: 10px;
+            }
+
+            .content .des{
+                margin-top: 10px;
+                margin-bottom: 20px;
+                opacity: 0;
+                animation: animate 1s ease-in-out 0.3s 1 forwards;
+                width: 70%;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                hyphens: auto;
+                line-height: 1.4;
+                display: inline-block;
+                background-color: rgba(0, 0, 0, 0.6);
+                padding: 8px 15px;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            }
+
+            .content button{
+                padding: 10px 20px;
+                border: none;
+                cursor: pointer;
+                opacity: 0;
+                animation: animate 1s ease-in-out 0.6s 1 forwards;
+                background-color: #444;
+                color: #fff;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+                transition: background-color 0.3s;
+            }
+            
+            .content button:hover {
+                background-color: #666;
+            }
+
+            @keyframes animate {
+                from{
+                    opacity: 0;
+                    transform: translate(0, 100px);
+                    filter: blur(33px);
+                }
+
+                to{
+                    opacity: 1;
+                    transform: translate(0);
+                    filter: blur(0);
+                }
+            }
+
+            .button{
+                width: 100%;
+                text-align: center;
+                position: absolute;
+                bottom: 20px;
+            }
+
+            .button button{
+                width: 40px;
+                height: 35px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                margin: 0 5px;
+                border: 1px solid #444;
+                background: #2a2a2a;
+                color: #fff;
+                transition: 0.3s;
+            }
+
+            .button button:hover{
+                background: #444;
+                color: #fff;
+            }
+
+            /* Responsive Media Queries */
+            @media screen and (max-width: 768px) {
+                .container {
+                    height: 70vh;
+                }
+                
+                .content .name {
+                    font-size: 28px;
+                }
+                
+                .content .des {
+                    font-size: 14px;
+                }
+                
+                .slide .item:nth-child(2) {
+                    width: 150px;
+                    height: 225px;
+                    left: 85%;
+                }
+            }
+            
+            @media screen and (max-width: 480px) {
+                .container {
+                    height: 60vh;
+                }
+                
+                .item .content {
+                    left: 5%;
+                    width: 90%;
+                }
+                
+                .content .name {
+                    font-size: 24px;
+                }
+                
+                .content .des {
+                    font-size: 12px;
+                    margin-bottom: 10px;
+                }
+                
+                .slide .item:nth-child(2) {
+                    width: 100px;
+                    height: 150px;
+                    left: 80%;
+                }
+                
+                .button button {
+                    width: 35px;
+                    height: 30px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+
+            <div class="slide">
+
+                <div class="item" style="background-image: url(assets/images/game_overview.png);">
+                    <!-- Image: A screenshot of the HandWave Game main gameplay showing a character dodging obstacles with a dark, modern UI -->
+                    <div class="content dark-text">
+                        <div class="name">HandWave Game</div>
+                        <div class="des">A modern web-based game where you dodge obstacles and survive using either keyboard controls or webcam-based hand tracking.</div>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(assets/images/dual_controls.png);">
+                    <!-- Image: Split screen showing keyboard controls on one side and webcam hand tracking on the other -->
+                    <div class="content">
+                        <div class="name">Dual Control Modes</div>
+                        <div class="des">Choose between keyboard controls (arrow keys or W/S) and camera-based hand gesture tracking for a unique gaming experience.</div>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(assets/images/multiple_maps.png);">
+                    <!-- Image: A collage of 4 different game maps with increasing difficulty, showing progression -->
+                    <div class="content dark-text">
+                        <div class="name">Multiple Maps</div>
+                        <div class="des">Progress through 4 challenging maps with increasing difficulty. Each map unlocks as you complete the previous one.</div>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(assets/images/hand_tracking.png);">
+                    <!-- Image: Visual representation of hand tracking in action, with landmark points highlighted on a hand -->
+                    <div class="content dark-text">
+                        <div class="name">Hand Tracking</div>
+                        <div class="des">Advanced hand detection using MediaPipe's HandLandmarker with real-time position tracking. No additional hardware required beyond a webcam.</div>
+                        <button onclick="window.open('https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker', '_blank')">Learn More</button>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(assets/images/gameplay_screenshot.png);">
+                    <!-- Image: An exciting in-game screenshot showing actual gameplay with obstacles and player interaction -->
+                    <div class="content dark-text">
+                        <div class="name">Game in Action</div>
+                        <div class="des">Experience fast-paced action as you navigate through obstacles and challenges. React quickly to survive and set high scores!</div>
+                    </div>
+                </div>
+                <div class="item" style="background-image: url(assets/images/tech_stack.png);">
+                    <!-- Image: Visual representation of the technology stack with logos for Next.js, TypeScript, MediaPipe, Canvas API, Tailwind CSS, and Radix UI -->
+                    <div class="content">
+                        <div class="name">Technologies</div>
+                        <div class="des">Built with Next.js, TypeScript, MediaPipe, Canvas API, Tailwind CSS, and Radix UI for a modern web gaming experience.</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="button">
+                <button class="prev"><i class="fa-solid fa-arrow-left"></i></button>
+                <button class="next"><i class="fa-solid fa-arrow-right"></i></button>
+                <button class="reset"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+
+        </div>
+        <script>
+            let next = document.querySelector('.next')
+            let prev = document.querySelector('.prev')
+            let reset = document.querySelector('.reset')
+            
+            // Store the original order of slides for reset
+            let originalSlides = []
+            
+            // Capture the original order when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                // Store original order of slides
+                originalSlides = Array.from(document.querySelectorAll('.item'))
+                console.log(originalSlides)
+                
+                // Fix: Ensure the first slide's content is visible
+                document.querySelectorAll('.item .content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.querySelector('.item:nth-child(1) .content').style.display = 'block';
+            })
+
+            next.addEventListener('click', function(){
+                let items = document.querySelectorAll('.item')
+                document.querySelector('.slide').appendChild(items[0])
+                
+                // Fix: Make sure current visible slide's content is shown
+                document.querySelectorAll('.item .content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.querySelector('.item:nth-child(1) .content').style.display = 'block';
+            })
+
+            prev.addEventListener('click', function(){
+                let items = document.querySelectorAll('.item')
+                document.querySelector('.slide').prepend(items[items.length - 1])
+                
+                // Fix: Make sure current visible slide's content is shown
+                document.querySelectorAll('.item .content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.querySelector('.item:nth-child(1) .content').style.display = 'block';
+            })
+            
+            reset.addEventListener('click', function(){
+                let slide = document.querySelector('.slide')
+                
+                // Clear the current slides
+                slide.innerHTML = ''
+                
+                // Re-add the slides in original order
+                originalSlides.forEach(function(item) {
+                    slide.appendChild(item.cloneNode(true))
+                })
+                
+                // Fix: Make sure first slide's content is visible after reset
+                document.querySelectorAll('.item .content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.querySelector('.item:nth-child(1) .content').style.display = 'block';
+            })
+        </script>
+    </body>
+</html>
