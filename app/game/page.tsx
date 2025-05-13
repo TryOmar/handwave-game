@@ -168,7 +168,7 @@ export default function GamePage() {
     })
 
     // Play collision sound
-    const collisionSound = new Audio("/sounds/collision.mp3")
+    const collisionSound = new Audio("/sounds/collision.wav")
     collisionSound.play().catch((e) => console.error("Error playing sound:", e))
   }
 
